@@ -21,87 +21,6 @@ int main(int argc, char **argv  )
 
 	ROS_INFO("Ros is initialized");
 
-	//
-     // Open the serial port.
-	//
-     Serial serial;
-     char c;
-     ROS_DEBUG("Serial Port will be opened");
-   
-
-
-    serial.setPort("/dev/ttyS8") ;
-	//check if serial port opens correctly
-     if ( /*! serial.isOpen() && */(serial.getPort() !="/dev/ttyS8"))
-     {
-		ROS_ERROR("Error: Could not set port.");
-     	return(1);
-     }
-     ROS_INFO("Serial port is set");
-
-
-    serial.open();
-    if(! serial.isOpen()){
-    	ROS_ERROR("Error: Could not open serial port.");
-     	return(1);
-    }
-    ROS_INFO("serial port is opened");
-
-     //
-     // Set the baud rate of the serial port.
-     //
-     serial.setBaudrate(115200) ;
-     if ( /*! serial.isOpen() && */(serial.getBaudrate() != 115200))
-     {
-		ROS_ERROR("Error: Could not set the baud rate.");
-     	return(1) ;
-     }
-	ROS_INFO("baud rate is setted");
-
-     //
-     // Set the number of data bits.
-     //
-     serial.setBytesize(eightbits) ;
-     if (/* ! serial.isOpen() && */(serial.getBytesize() != eightbits))
-     {
-		ROS_ERROR("Error: Could not set the character size.");
-     	return(1) ;
-     }
-	ROS_INFO("char size is setted");
-
-     //
-     // Disable parity.
-     //
-     serial.setParity(parity_none);
-     if (/* ! serial.isOpen() && */(serial.getParity() != parity_none))
-     {
-		ROS_ERROR("Error: Could not disable the parity.");
-     	return(1) ;
-     }
-
-	ROS_INFO("parity is setted");
-
-     //
-     // Set the number of stop bits.
-     //
-     serial.setStopbits(stopbits_two);
-     if (/* ! serial.isOpen() && */(serial.getStopbits() != stopbits_two))
-     {
-		ROS_ERROR("Error: Could not set the number of stop bits.");
-		return(1) ;
-     }
-	ROS_INFO("stop bits are setted");
-
-     //
-     // Turn off hardware flow control.
-     //
-     serial.setFlowcontrol( flowcontrol_none) ;
-     if (/* ! serial.isOpen() && */(serial.getFlowcontrol() != flowcontrol_none))
-     {
-		ROS_ERROR("Error: Could not use hardware flow control.");
-     	return(1) ;
-     } 
-	ROS_INFO("Disabled flow control");
 
      //
      // Do not skip whitespace characters while reading from the
@@ -139,23 +58,6 @@ int main(int argc, char **argv  )
 		//write data to serial port.
 		//serial.write(0x5aaa033000000000);
 		//serial.write("0x90, 0x170, 0x03, 0x48, 0x00, 0x00, 0x00, 0x00");
-
-     	serial.write(out_buf);
-     	//serial.write(piet);
-
-     	//serial.read(out_buf , 8);
-
-     	//serial.write("0x5aaa033000000000");
-     	//serial.write(0x5aaa033000000000);
-		ROS_INFO_ONCE("We doen het");
-
-		serial.read(kees);
-
-		if(kees == 1){
-			ROS_INFO("HOoi");
-		}else{
-			ROS_INFO(" %c", kees);			
-		}
 
 	    rate.sleep();
 	 }
