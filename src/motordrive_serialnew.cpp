@@ -1,14 +1,79 @@
-#include <serial/serial.h>
+//#include <serial/serial.h>
+
 #include <iostream>
 #include <unistd.h>
 #include <cstdlib>
 #include <string>
 #include <termios.h>
+#include <errno.h>
+#include <stdio.h>
+#include <fcntl.h>
 
 #include "ros/ros.h"
 
+
+//#define O_RDWR 0x0002
+//#define O_NOCTTY 0
+
 using namespace std;
-using namespace serial;
+
+int set_interface_attribs (int fd, int speed, int parity)
+{
+        struct termios tty;
+        memset (&tty, 0, sizeof tty);
+        if (tcgetattr (fd, &tty) != 0)
+        {
+                ROS_ERROR("error %d from tcgetattr", errno);
+                return -1;
+        }
+
+        cfsetospeed (&tty, speed);
+        cfsetispeed (&tty, speed);
+
+        tty.c_cflag = (tty.c_cflag & ~CSIZE) | CS8;     // 8-bit chars
+        // disable IGNBRK for mismatched speed tests; otherwise receive break
+        // as \000 chars
+        tty.c_iflag &= ~IGNBRK;         // disable break processing
+        tty.c_lflag = 0;                // no signaling chars, no echo,
+                                        // no canonical processing
+        tty.c_oflag = 0;                // no remapping, no delays
+        tty.c_cc[VMIN]  = 0;            // read doesn't block
+        tty.c_cc[VTIME] = 5;            // 0.5 seconds read timeout
+
+        tty.c_iflag &= ~(IXON | IXOFF | IXANY); // shut off xon/xoff ctrl
+
+        tty.c_cflag |= (CLOCAL | CREAD);// ignore modem controls,
+                                        // enable reading
+        tty.c_cflag &= ~(PARENB | PARODD);      // shut off parity
+        tty.c_cflag |= parity;
+        //tty.c_cflag &= ~CSTOPB;
+        tty.c_cflag |= CSTOPB;			//2 stop bits
+        tty.c_cflag &= ~CRTSCTS;
+
+        if (tcsetattr (fd, TCSANOW, &tty) != 0)
+        {
+                ROS_ERROR ("error %d from tcsetattr", errno);
+                return 1;
+        }
+        return 0;
+}
+
+void set_blocking (int fd, int should_block)
+{
+        struct termios tty;
+        memset (&tty, 0, sizeof tty);
+        if (tcgetattr (fd, &tty) != 0)
+        {
+                ROS_ERROR ("error %d from tggetattr", errno);
+        }
+
+        tty.c_cc[VMIN]  = should_block ? 1 : 0;
+        tty.c_cc[VTIME] = 5;            // 0.5 seconds read timeout
+
+        if (tcsetattr (fd, TCSANOW, &tty) != 0)
+                ROS_ERROR ("error %d setting term attributes", errno);
+}
+
 
 int main(int argc, char **argv  )
 {
@@ -21,28 +86,26 @@ int main(int argc, char **argv  )
 
 	ROS_INFO("Ros is initialized");
 
+//	char *portname = "/dev/ttyS8";
 
-     //
-     // Do not skip whitespace characters while reading from the
-     // serial port.
-     //
-     // serial_port.unsetf( std::ios_base::skipws ) ;
-     //
-     // Wait for some data to be available at the serial port.
-     //
-     //
-     // Keep reading data from serial port and print it to the screen.
-     //
-     // Wait for some data to be available at the serial port.
-   
+	int fd = open("/dev/ttyS8", O_RDWR | O_NOCTTY | O_SYNC);
+	ROS_INFO("fd = %i", fd);
 
-  //
-  //    while( serial_port.rdbuf()->in_avail() > 0 )
+	if (fd < 0){
+	        ROS_ERROR ("error %d opening %s: %s", errno, "/dev/ttyS8", strerror (errno));
+	        return -1;
+	}
+	ROS_INFO("opened port");
+
+	set_interface_attribs (fd, B115200, 0);  // set speed to 115,200 bps, 8n1 (no parity)
+	set_blocking (fd, 0);                // set no blocking
+
 
 	char kees = 1;
 
 	while(ros::ok())
      {
+     	ROS_INFO("we draaien");
 		char out_buf[8];
 		
 		//Define data
@@ -54,13 +117,20 @@ int main(int argc, char **argv  )
 		out_buf[5] = 0x00;
 		out_buf[6] = 0x00;
 		out_buf[7] = 0x00;
+
+
+//		write(fd, "hello!\n", 7);           // send 7 character greeting
+		write(fd, out_buf, 8);
+		char buf [100];
+		int n = read(fd, buf, sizeof buf);  // read up to 100 characters if ready to read
 		
-		//write data to serial port.
-		//serial.write(0x5aaa033000000000);
-		//serial.write("0x90, 0x170, 0x03, 0x48, 0x00, 0x00, 0x00, 0x00");
+		ROS_INFO("%c", buf[0]);
 
 	    rate.sleep();
 	 }
+
+	 close(fd);
+	 ROS_INFO("port is closed");
 
 //     while(1)
 //     {
